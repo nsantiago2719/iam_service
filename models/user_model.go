@@ -1,7 +1,10 @@
 package models
 
-import "fmt"
-
-func UserModel() {
-	fmt.Println("UserModel")
+type User struct {
+	firstName, lastName string
+	birthDate           string
+	password            string
+	email               string
+	username            string
+	role                Role
 }
