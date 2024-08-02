@@ -7,4 +7,5 @@ import (
 
 func IamRoutes(r *mux.Router) {
 	r.HandleFunc("/auth", handlers.Auth).Methods("GET")
+	r.HandleFunc("/create/user", handlers.CreateUser).Methods("GET")
 }
