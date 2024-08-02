@@ -7,6 +7,7 @@ import (
 )
 
 func Auth(w http.ResponseWriter, r *http.Request) {
-	models.UserModel()
-	json.NewEncoder(w).Encode("")
+	w.Header().Set("Content-Type", "application/json")
+	user := ""
+	json.NewEncoder(w).Encode(user)
 }
