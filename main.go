@@ -12,11 +12,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var JwtSecret = []byte(os.Getenv("JWT_SECRET"))
 var pg_password = os.Getenv("PG_PASSWORD")
 var dsn = fmt.Sprintf("user=app password=%s dbname=iam host=%s port=%s sslmode=disable", pg_password, "localhost", "5432")
 
 // Setup DB
 var db, err = sqlx.Connect("postgres", dsn)
+
+// Bcrypt Constants
+const (
+	MinCost     int = 8
+	MaxCost     int = 30
+	DefaultCost int = 10
+)
 
 func main() {
 	r := mux.NewRouter()

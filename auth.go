@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Auth(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +35,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
        users.last_name AS "users.last_name",
        users.email AS "users.email",
        users.username AS "users.username",
+       users.password AS "users.password",
        users.birthdate AS "users.birthdate",
        roles.name AS "roles.name",
        roles.permissions AS "roles.permissions",
@@ -61,6 +65,26 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	for _, u := range usersMap {
 		user = *u
 	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
 
-	json.NewEncoder(w).Encode(user)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user": user,
+	})
+
+	tokenString, err := token.SignedString(JwtSecret)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	response := JwtResponse{
+		Token: tokenString,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
 }

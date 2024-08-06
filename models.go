@@ -34,7 +34,7 @@ type User struct {
 	FirstName string  `json:"firstName" db:"users.first_name"`
 	LastName  string  `json:"lastName" db:"users.last_name"`
 	BirthDate string  `json:"birthDate" db:"users.birthdate"`
-	Password  string  `json:"-"`
+	Password  string  `json:"-" db:"users.password"`
 	Email     string  `json:"email" db:"users.email"`
 	Username  string  `json:"userName" db:"users.username"`
 	Roles     []*Role `json:"roles" db:"-"`
@@ -61,5 +61,9 @@ type Permission struct {
 
 type LoginDetails struct {
 	Username string
-	password string
+	Password string
+}
+
+type JwtResponse struct {
+	Token string `json:"token"`
 }
