@@ -1,10 +1,14 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 )
 
 func IamRoutes(r *mux.Router) {
-	r.HandleFunc("/auth", Auth).Methods("POST")
-	r.HandleFunc("/user/create", CreateUser).Methods("POST")
+	userPrefix := r.PathPrefix("/users").Subrouter()
+	r.HandleFunc("/auth", Auth).Methods(http.MethodPost)
+
+	userPrefix.HandleFunc("/{id}", UserDetails).Methods(http.MethodGet)
 }
