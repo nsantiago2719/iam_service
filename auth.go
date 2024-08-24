@@ -62,9 +62,11 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 		usersMap[userRole.Role.UserId].Roles = append(usersMap[userRole.Role.UserId].Roles, &userRole.Role)
 	}
+
 	for _, u := range usersMap {
 		user = *u
 	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
@@ -72,7 +74,10 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user": user,
+		"data": Payload{
+			Id:    user.Id,
+			Roles: user.Roles,
+		},
 	})
 
 	tokenString, err := token.SignedString(JwtSecret)

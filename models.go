@@ -67,3 +67,8 @@ type LoginDetails struct {
 type JwtResponse struct {
 	Token string `json:"token"`
 }
+
+type Payload struct {
+	Id    string
+	Roles []*Role
+}
