@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -78,6 +79,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			Id:    user.Id,
 			Roles: user.Roles,
 		},
+		"exp": time.Now().Add(time.Minute * 1).Unix(),
 	})
 
 	tokenString, err := token.SignedString(JwtSecret)
@@ -92,4 +94,10 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 
+}
+
+func Authorizer(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	})
 }
