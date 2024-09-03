@@ -81,7 +81,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			Id:    user.Id,
 			Roles: user.Roles,
 		},
-		"exp": time.Now().Add(time.Minute * 1).Unix(),
+		"exp": time.Now().Add(time.Minute * 15).Unix(),
 	})
 
 	tokenString, err := token.SignedString(JwtSecret)
