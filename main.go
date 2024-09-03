@@ -12,9 +12,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var JwtSecret = []byte(os.Getenv("JWT_SECRET"))
-var pg_password = os.Getenv("PG_PASSWORD")
-var dsn = fmt.Sprintf("user=app password=%s dbname=iam host=%s port=%s sslmode=disable", pg_password, "localhost", "5432")
+var (
+	JwtSecret  = []byte(os.Getenv("JWT_SECRET"))
+	pgPassword = os.Getenv("PG_PASSWORD")
+	dsn        = fmt.Sprintf("user=app password=%s dbname=iam host=%s port=%s sslmode=disable", pgPassword, "localhost", "5432")
+)
 
 // Setup DB
 var db, err = sqlx.Connect("postgres", dsn)
