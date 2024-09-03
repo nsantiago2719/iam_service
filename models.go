@@ -29,6 +29,7 @@ var schema = `
   );
   `
 
+// User used for creating struct for user data from database
 type User struct {
 	Id        string  `json:"id" db:"users.id"`
 	FirstName string  `json:"firstName" db:"users.first_name"`
@@ -40,34 +41,31 @@ type User struct {
 	Roles     []*Role `json:"roles" db:"-"`
 }
 
+// UserRole used for containg the user and the associated role
 type UserRole struct {
 	User
 	Role
 }
 
+// Role used for creating struct for role data from database
 type Role struct {
 	UserId      string         `json:"-" db:"userId"`
 	Name        string         `json:"name" db:"roles.name"`
 	Permissions types.JSONText `json:"permissions" db:"roles.permissions"`
 }
 
-type Permissions []Permission
-
-type Permission struct {
-	Action   string `json:"action"`
-	Resource string `json:"resource"`
-	Access   string `json:"access"`
-}
-
+// LoginDetails for the username and password coming from the request body
 type LoginDetails struct {
 	Username string
 	Password string
 }
 
+// JwtResponse for the response when user is authenticated
 type JwtResponse struct {
 	Token string `json:"token"`
 }
 
+// Payload contains the payload for the jwt token
 type Payload struct {
 	Id    string
 	Roles []*Role

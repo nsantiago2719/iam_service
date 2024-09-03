@@ -1,5 +1,6 @@
 package main
 
+// TODO:
 import (
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Auth function is used for authentication of the user,
+// returns a jwt containing the roles
+// and authorized actions
 func Auth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -22,12 +26,11 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	login := LoginDetails{}
 	err = json.Unmarshal(body, &login)
-
 	if err != nil {
 		fmt.Println("Failed unmarshal of login details: %w", err)
 	}
 
-	user_role := []UserRole{}
+	userRoles := []UserRole{}
 	usersMap := make(map[string]*User)
 	user := User{}
 	query := `
@@ -47,13 +50,12 @@ func Auth(w http.ResponseWriter, r *http.Request) {
   WHERE users.username=$1
   `
 
-	err = db.Select(&user_role, query, login.Username)
-
+	err = db.Select(&userRoles, query, login.Username)
 	if err != nil {
 		fmt.Println("User select query failed: %w", err)
 	}
 
-	for _, userRole := range user_role {
+	for _, userRole := range userRoles {
 		// append user to users map
 		user, ok := usersMap[userRole.User.Id]
 		if !ok {
@@ -83,7 +85,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	})
 
 	tokenString, err := token.SignedString(JwtSecret)
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -93,11 +94,4 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
-
-}
-
-func Authorizer(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
-	})
 }
