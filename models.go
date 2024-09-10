@@ -31,7 +31,7 @@ var schema = `
 
 // User used for creating struct for user data from database
 type User struct {
-	Id        string  `json:"id" db:"users.id"`
+	ID        string  `json:"id" db:"users.id"`
 	FirstName string  `json:"firstName" db:"users.first_name"`
 	LastName  string  `json:"lastName" db:"users.last_name"`
 	BirthDate string  `json:"birthDate" db:"users.birthdate"`
@@ -49,7 +49,7 @@ type UserRole struct {
 
 // Role used for creating struct for role data from database
 type Role struct {
-	UserId      string         `json:"-" db:"userId"`
+	UserID      string         `json:"-" db:"userId"`
 	Name        string         `json:"name" db:"roles.name"`
 	Permissions types.JSONText `json:"permissions" db:"roles.permissions"`
 }
@@ -67,6 +67,6 @@ type JwtResponse struct {
 
 // Payload contains the payload for the jwt token
 type Payload struct {
-	Id    string
+	ID    string
 	Roles []*Role
 }
