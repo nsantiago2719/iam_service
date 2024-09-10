@@ -43,7 +43,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
        users.birthdate AS "users.birthdate",
        roles.name AS "roles.name",
        roles.permissions AS "roles.permissions",
-       ur.user_id AS "userId"
+       ur.user_id AS "userID"
   FROM users AS users
   LEFT JOIN users_roles AS ur ON users.id = ur.user_id
   LEFT JOIN roles AS roles ON roles.id = ur.role_id
@@ -57,13 +57,13 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	for _, userRole := range userRoles {
 		// append user to users map
-		user, ok := usersMap[userRole.User.Id]
+		user, ok := usersMap[userRole.User.ID]
 		if !ok {
 			user = &userRole.User
-			usersMap[user.Id] = user
+			usersMap[user.ID] = user
 		}
 
-		usersMap[userRole.Role.UserId].Roles = append(usersMap[userRole.Role.UserId].Roles, &userRole.Role)
+		usersMap[userRole.Role.UserID].Roles = append(usersMap[userRole.Role.UserID].Roles, &userRole.Role)
 	}
 
 	for _, u := range usersMap {
@@ -78,7 +78,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"data": Payload{
-			Id:    user.Id,
+			ID:    user.ID,
 			Roles: user.Roles,
 		},
 		"exp": time.Now().Add(time.Minute * 15).Unix(),
