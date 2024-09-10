@@ -15,7 +15,10 @@ import (
 var (
 	JwtSecret  = []byte(os.Getenv("JWT_SECRET"))
 	pgPassword = os.Getenv("PG_PASSWORD")
-	dsn        = fmt.Sprintf("user=app password=%s dbname=iam host=%s port=%s sslmode=disable", pgPassword, "localhost", "5432")
+	pgHost     = os.Getenv("PG_HOST")
+	pgUser     = os.Getenv("PG_USER")
+	pgPort     = os.Getenv("PG_PORT")
+	dsn        = fmt.Sprintf("user=%s password=%s dbname=iam host=%s port=%s sslmode=disable", pgUser, pgPassword, pgHost, pgPort)
 )
 
 // Setup DB
