@@ -34,6 +34,10 @@ const (
 func main() {
 	r := mux.NewRouter()
 
+	if err != nil {
+		fmt.Println("Error: %w", err)
+	}
+
 	db.MustExec(schema)
 
 	IamRoutes(r)
