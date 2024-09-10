@@ -23,3 +23,14 @@ func GetenvInt(key string) int {
 
 	return val
 }
+
+func GetenvBool(key string) bool {
+	env := Getenv(key)
+
+	val, err := strconv.ParseBool(env)
+	if err != nil {
+		fmt.Println("Error: %w", err)
+	}
+
+	return val
+}
