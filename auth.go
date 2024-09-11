@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -95,6 +96,19 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Logout(w http.ResponseWriter, r *http.Request) {
+func Logout(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	redisClient := RedisClient()
+
+	ctx := context.Background()
+	_, err := redisClient.Ping(ctx).Result()
+	if err != nil {
+		fmt.Println("Error: %w", err)
+	}
+
+	response := GenericResponse{
+		Message: "User logged out",
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
