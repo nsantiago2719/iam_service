@@ -42,7 +42,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
        users.birthdate AS "users.birthdate",
        roles.name AS "roles.name",
        roles.permissions AS "roles.permissions",
-       ur.user_id AS "userID"
+       ur.user_id AS "userId"
   FROM users AS users
   LEFT JOIN users_roles AS ur ON users.id = ur.user_id
   LEFT JOIN roles AS roles ON roles.id = ur.role_id
