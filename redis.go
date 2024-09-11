@@ -7,10 +7,10 @@ import (
 func RedisClient() *redis.Client {
 	rcon := redis.NewClient(&redis.Options{
 		Addr:             Getenv("REDIS_ADDR"),
-		Password:         Getenv("REDIS_PASS"),
-		DB:               GetenvInt("REDIS_DB"),
-		Protocol:         GetenvInt("REDIS_PROTOCOL"),
-		DisableIndentity: GetenvBool("REDIS_IDENITY"),
+		Password:         Getenv("REDIS_PASS", ""),
+		DB:               GetenvInt("REDIS_DB", "0"),
+		Protocol:         GetenvInt("REDIS_PROTOCOL", "3"),
+		DisableIndentity: GetenvBool("REDIS_IDENITY", "false"),
 	})
 
 	return rcon
