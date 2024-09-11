@@ -70,3 +70,7 @@ type Payload struct {
 	ID    string
 	Roles []*Role
 }
+
+type GenericResponse struct {
+	Message string `json:"message"`
+}
