@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jmoiron/sqlx/types"
 )
 
@@ -69,6 +70,11 @@ type JwtResponse struct {
 type Payload struct {
 	ID    string
 	Roles []*Role
+}
+
+type Claims struct {
+	Data Payload `json:"data"`
+	jwt.RegisteredClaims
 }
 
 type GenericResponse struct {
