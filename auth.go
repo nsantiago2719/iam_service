@@ -102,6 +102,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Logout handler blacklist the token if it doesnt exist
 func Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	redisClient := RedisClient()
@@ -117,7 +118,11 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		response = GenericResponse{
 			Message: "Token is invalid",
 		}
+		json.NewEncoder(w).Encode(response)
+		return
+
 	}
+
 	// Add token to cache for blacklisting
 	err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err()
 	if err != nil {

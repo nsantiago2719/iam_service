@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 func ExtractClaim(token string) (*Claims, bool) {
 	tokenVal, err := jwt.ParseWithClaims(token,
 		&Claims{},
-		func(token *jwt.Token) (interface{}, error) {
+		func(_ *jwt.Token) (interface{}, error) {
 			return JwtSecret, nil
 		})
 	if err != nil {
@@ -21,9 +22,19 @@ func ExtractClaim(token string) (*Claims, bool) {
 	}
 
 	if claims, ok := tokenVal.Claims.(*Claims); ok && tokenVal.Valid {
+		ctx := context.Background()
+		rclient := RedisClient()
+		val, _ := rclient.Get(ctx, claims.RegisteredClaims.ID).Result()
+
+		// check if there is a value then return invalid
+		if len(val) > 0 {
+			return nil, false
+		}
+
 		return claims, true
 	}
 
+	// by default return invalid token
 	return nil, false
 }
 
