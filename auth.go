@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,7 +25,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := LoginDetails{}
+	var login LoginDetails
 	err = json.Unmarshal(body, &login)
 	if err != nil {
 		fmt.Println("Failed unmarshal of login details: %w", err)
@@ -42,7 +44,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
        users.birthdate AS "users.birthdate",
        roles.name AS "roles.name",
        roles.permissions AS "roles.permissions",
-       ur.user_id AS "userID"
+       ur.user_id AS "userId"
   FROM users AS users
   LEFT JOIN users_roles AS ur ON users.id = ur.user_id
   LEFT JOIN roles AS roles ON roles.id = ur.role_id
@@ -75,13 +77,18 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"data": Payload{
+	claims := Claims{
+		Payload{
 			ID:    user.ID,
 			Roles: user.Roles,
 		},
-		"exp": time.Now().Add(time.Minute * 15).Unix(),
-	})
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			ID:        uuid.NewString(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString(JwtSecret)
 	if err != nil {
@@ -90,6 +97,39 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	response := JwtResponse{
 		Token: tokenString,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// Logout handler blacklist the token if it doesnt exist
+func Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	redisClient := RedisClient()
+	var response GenericResponse
+	ctx := context.Background()
+	// Get the token from the Authorization header
+	token := r.Header.Get("Authorization")[7:]
+
+	// Extract claim and checks validity
+	claim, valid := ExtractClaim(token)
+
+	if valid != true {
+		response = GenericResponse{
+			Message: "Token is invalid",
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+
+	}
+
+	// Add token to cache for blacklisting
+	err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error: %w", err)
+	}
+	response = GenericResponse{
+		Message: "User logged out",
 	}
 
 	json.NewEncoder(w).Encode(response)
