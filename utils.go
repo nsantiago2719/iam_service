@@ -4,7 +4,28 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+// ExtractClaim returns the jwt claim and bool for token validitiy
+func ExtractClaim(token string) (*Claims, bool) {
+	tokenVal, err := jwt.ParseWithClaims(token,
+		&Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return JwtSecret, nil
+		})
+	if err != nil {
+		fmt.Println(err)
+		return nil, false
+	}
+
+	if claims, ok := tokenVal.Claims.(*Claims); ok && tokenVal.Valid {
+		return claims, true
+	}
+
+	return nil, false
+}
 
 func Getenv(key string, defaultValue ...string) string {
 	if val, ok := os.LookupEnv(key); ok {
