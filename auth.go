@@ -24,7 +24,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login := LoginDetails{}
+	var login LoginDetails
 	err = json.Unmarshal(body, &login)
 	if err != nil {
 		fmt.Println("Failed unmarshal of login details: %w", err)
@@ -116,15 +116,14 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		response = GenericResponse{
 			Message: "Token is invalid",
 		}
-	} else {
-		// Add token to cache for blacklisting
-		err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err()
-		if err != nil {
-			fmt.Println("Error: %w", err)
-		}
-		response = GenericResponse{
-			Message: "User logged out",
-		}
+	}
+	// Add token to cache for blacklisting
+	err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error: %w", err)
+	}
+	response = GenericResponse{
+		Message: "User logged out",
 	}
 
 	json.NewEncoder(w).Encode(response)
