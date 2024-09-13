@@ -76,13 +76,18 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"data": Payload{
+	claims := Claims{
+		Payload{
 			ID:    user.ID,
 			Roles: user.Roles,
 		},
-		"exp": time.Now().Add(time.Minute * 15).Unix(),
-	})
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			ID:        user.ID,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString(JwtSecret)
 	if err != nil {
@@ -96,18 +101,30 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Logout(w http.ResponseWriter, _ *http.Request) {
+func Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	redisClient := RedisClient()
-
+	var response GenericResponse
 	ctx := context.Background()
-	_, err := redisClient.Ping(ctx).Result()
-	if err != nil {
-		fmt.Println("Error: %w", err)
-	}
+	// Get the token from the Authorization header
+	token := r.Header.Get("Authorization")[7:]
 
-	response := GenericResponse{
-		Message: "User logged out",
+	// Extract claim and checks validity
+	claim, valid := ExtractClaim(token)
+
+	if valid != true {
+		response = GenericResponse{
+			Message: "Token is invalid",
+		}
+	} else {
+		// Add token to cache for blacklisting
+		err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute)
+		if err != nil {
+			fmt.Println("Error: %w", err)
+		}
+		response = GenericResponse{
+			Message: "User logged out",
+		}
 	}
 
 	json.NewEncoder(w).Encode(response)
