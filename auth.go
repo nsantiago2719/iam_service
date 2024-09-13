@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -83,7 +84,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		},
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-			ID:        user.ID,
+			ID:        uuid.NewString(),
 		},
 	}
 
