@@ -36,12 +36,9 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	query := `
   SELECT users.id AS "users.id",
-       users.first_name AS "users.first_name",
-       users.last_name AS "users.last_name",
        users.email AS "users.email",
        users.username AS "users.username",
        users.password AS "users.password",
-       users.birthdate AS "users.birthdate",
        roles.name AS "roles.name",
        roles.permissions AS "roles.permissions",
        ur.user_id AS "userId"
