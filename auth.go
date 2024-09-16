@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -107,10 +106,10 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:]
 
 	// Extract claim and checks validity
-	claim, err := authorizer.ExtractClaim(token)
+	claim, err := authorizer.GetValidClaim(token)
 	if err != nil {
 		response := GenericResponse{
-			Message: "Token is invalid",
+			Message: err.Error(),
 		}
 		json.NewEncoder(w).Encode(response)
 		return
@@ -120,7 +119,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
-		errors.New("Token is already blacklisted")
 		response := GenericResponse{
 			Message: "Token is invalid",
 		}
