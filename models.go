@@ -16,10 +16,7 @@ var schema = `
 
   CREATE TABLE IF NOT EXISTS users (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    first_name text,
-    last_name text,
     email text,
-    birthdate text,
     username text,
     password text
   );
@@ -32,14 +29,11 @@ var schema = `
 
 // User used for creating struct for user data from database
 type User struct {
-	ID        string  `json:"id" db:"users.id"`
-	FirstName string  `json:"firstName" db:"users.first_name"`
-	LastName  string  `json:"lastName" db:"users.last_name"`
-	BirthDate string  `json:"birthDate" db:"users.birthdate"`
-	Password  string  `json:"-" db:"users.password"`
-	Email     string  `json:"email" db:"users.email"`
-	Username  string  `json:"userName" db:"users.username"`
-	Roles     []*Role `json:"roles" db:"-"`
+	ID       string  `json:"id" db:"users.id"`
+	Password string  `json:"-" db:"users.password"`
+	Email    string  `json:"email" db:"users.email"`
+	Username string  `json:"userName" db:"users.username"`
+	Roles    []*Role `json:"roles" db:"-"`
 }
 
 // UserRole used for containg the user and the associated role
