@@ -26,8 +26,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var login LoginDetails
-	err = json.Unmarshal(body, &login)
-	if err != nil {
+	if err := json.Unmarshal(body, &login); err != nil {
 		fmt.Println("Failed unmarshal of login details: %w", err)
 	}
 
@@ -48,9 +47,8 @@ func Auth(w http.ResponseWriter, r *http.Request) {
   WHERE users.username=$1
   `
 
-	err = db.Select(&userRoles, query, login.Username)
-	if err != nil {
-		fmt.Println("User select query failed: %w", err)
+	if err := db.Select(&userRoles, query, login.Username); err != nil {
+		fmt.Println("User select query failed: ", err)
 	}
 
 	for _, userRole := range userRoles {
@@ -68,8 +66,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		user = *u
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password)); err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -87,7 +84,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString(JwtSecret)
+	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -103,7 +100,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 func Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	redisClient := RedisClient()
-	var response GenericResponse
 	ctx := context.Background()
 	// Get the token from the Authorization header
 	token := r.Header.Get("Authorization")[7:]
@@ -121,11 +117,12 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add token to cache for blacklisting
-	err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err()
-	if err != nil {
-		fmt.Println("Error: %w", err)
+	// show error if there is any
+	if err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err(); err != nil {
+		fmt.Println("Error: ", err)
 	}
-	response = GenericResponse{
+
+	response := GenericResponse{
 		Message: "User logged out",
 	}
 
