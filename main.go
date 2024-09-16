@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	JwtSecret  = []byte(os.Getenv("JWT_SECRET"))
+	jwtSecret  = []byte(os.Getenv("JWT_SECRET"))
 	pgPassword = Getenv("PG_PASSWORD")
 	pgHost     = Getenv("PG_HOST")
 	pgUser     = Getenv("PG_USER")

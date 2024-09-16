@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/nsantiago2719/i_a_m/authorizer"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -105,15 +107,25 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:]
 
 	// Extract claim and checks validity
-	claim, valid := ExtractClaim(token)
-
-	if valid != true {
-		response = GenericResponse{
+	claim, err := authorizer.ExtractClaim(token)
+	if err != nil {
+		response := GenericResponse{
 			Message: "Token is invalid",
 		}
 		json.NewEncoder(w).Encode(response)
 		return
+	}
+	// get the token from redis and returns a resault
+	val, _ := redisClient.Get(ctx, claim.RegisteredClaims.ID).Result()
 
+	// check if there is a value, if true, returns error
+	if len(val) > 0 {
+		errors.New("Token is already blacklisted")
+		response := GenericResponse{
+			Message: "Token is invalid",
+		}
+		json.NewEncoder(w).Encode(response)
+		return
 	}
 
 	// Add token to cache for blacklisting
