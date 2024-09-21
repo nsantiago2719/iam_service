@@ -41,10 +41,10 @@ func extractClaim(token string) (*Claims, error) {
 
 // AuthorizedAccess validates and checks if token is authorized to call the endpoint
 // returns subject and error
-func AuthorizedAccess(action, token string) (string, error) {
+func AuthorizedAccess(action, token string) (*string, error) {
 	claim, err := extractClaim(token)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	scope := claim.Data.Scope
@@ -52,8 +52,8 @@ func AuthorizedAccess(action, token string) (string, error) {
 
 	for _, s := range scopeSlice {
 		if s == action {
-			return claim.RegisteredClaims.Subject, nil
+			return &claim.RegisteredClaims.Subject, nil
 		}
 	}
-	return "", errors.New("Unauthorized access")
+	return nil, errors.New("Unauthorized access")
 }

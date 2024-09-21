@@ -117,7 +117,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// get the token from redis and returns a resault
-	val, _ := s.memoryCache.Get(ctx, sub).Result()
+	val, _ := s.memoryCache.Get(ctx, *sub).Result()
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
@@ -130,7 +130,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 
 	// Add token to cache for blacklisting
 	// show error if there is any
-	if err := s.memoryCache.Set(ctx, sub, token, 15*time.Minute).Err(); err != nil {
+	if err := s.memoryCache.Set(ctx, *sub, token, 15*time.Minute).Err(); err != nil {
 		fmt.Println("Error: ", err)
 	}
 
