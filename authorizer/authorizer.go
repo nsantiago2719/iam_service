@@ -2,17 +2,17 @@ package authorizer
 
 import (
 	"errors"
-	"fmt"
 	"os"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// payload contains the payload for the jwt token
 type payload struct {
 	Scope string `json:"scope"`
 }
 
+// Claims contains the payload for the jwt token
 type Claims struct {
 	Data payload `json:"data"`
 	jwt.RegisteredClaims
@@ -41,12 +41,19 @@ func extractClaim(token string) (*Claims, error) {
 
 // AuthorizedAccess validates and checks if token is authorized to call the endpoint
 // returns subject and error
-func AuthorizedAccess(token string) (string, error) {
+func AuthorizedAccess(action, token string) (string, error) {
 	claim, err := extractClaim(token)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	// roles := []role{}
-	return claim.RegisteredClaims.Subject, nil
+	scope := claim.Data.Scope
+	scopeSlice := strings.Split(scope, " ")
+
+	for _, s := range scopeSlice {
+		if s == action {
+			return claim.RegisteredClaims.Subject, nil
+		}
+	}
+	return "", errors.New("Unauthorized access")
 }

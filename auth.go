@@ -86,7 +86,6 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	fmt.Println(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString(jwtSecret)
@@ -109,7 +108,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:]
 
 	// Extract claim and checks validity
-	sub, err := authorizer.AuthorizedAccess(token)
+	sub, err := authorizer.AuthorizedAccess("user.logout", token)
 	if err != nil {
 		response := GenericResponse{
 			Message: "Token is invalid",
