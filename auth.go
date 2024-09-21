@@ -109,7 +109,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")[7:]
 
 	// Extract claim and checks validity
-	claim, err := authorizer.ExtractClaim(token)
+	sub, err := authorizer.AuthorizedAccess(token)
 	if err != nil {
 		response := GenericResponse{
 			Message: "Token is invalid",
@@ -118,7 +118,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// get the token from redis and returns a resault
-	val, _ := s.memoryCache.Get(ctx, claim.RegisteredClaims.ID).Result()
+	val, _ := s.memoryCache.Get(ctx, sub).Result()
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
@@ -131,7 +131,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 
 	// Add token to cache for blacklisting
 	// show error if there is any
-	if err := s.memoryCache.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err(); err != nil {
+	if err := s.memoryCache.Set(ctx, sub, token, 15*time.Minute).Err(); err != nil {
 		fmt.Println("Error: ", err)
 	}
 

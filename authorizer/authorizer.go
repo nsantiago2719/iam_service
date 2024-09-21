@@ -6,18 +6,11 @@ import (
 	"os"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jmoiron/sqlx/types"
 )
-
-// Role used for creating struct for role data from database
-type role struct {
-	Name        string         `json:"name"`
-	Permissions types.JSONText `json:"permissions"`
-}
 
 // payload contains the payload for the jwt token
 type payload struct {
-	roles []*role `json:"roles"`
+	Scope string `json:"scope"`
 }
 
 type Claims struct {
@@ -28,7 +21,7 @@ type Claims struct {
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 // ExtractClaim returns the jwt claim and bool for token validitiy
-func ExtractClaim(token string) (*Claims, error) {
+func extractClaim(token string) (*Claims, error) {
 	tokenVal, err := jwt.ParseWithClaims(token,
 		&Claims{},
 		func(_ *jwt.Token) (interface{}, error) {
@@ -46,12 +39,14 @@ func ExtractClaim(token string) (*Claims, error) {
 	return nil, errors.New("Invalid token")
 }
 
-func AuthorizedAccess(resource, action, token string) error {
-	_, err := ExtractClaim(token)
+// AuthorizedAccess validates and checks if token is authorized to call the endpoint
+// returns subject and error
+func AuthorizedAccess(token string) (string, error) {
+	claim, err := extractClaim(token)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	// roles := []role{}
-	return nil
+	return claim.RegisteredClaims.Subject, nil
 }
