@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Getenv retrieves the env value else return a default value
@@ -36,4 +37,27 @@ func GetenvBool(key string, defaultValue ...string) bool {
 	}
 
 	return val
+}
+
+// RemoveStringDuplicate accepts map of string and returns compact string
+func RemoveStringDuplicate(s []string) string {
+	uniqueMap := map[string]bool{}
+	stringMap := []string{}
+
+	for _, v := range s {
+		splits := strings.Split(v, " ")
+		for _, s := range splits {
+			// check if the string is in the unique map
+			// if returns true do not append to stringMap
+			if !uniqueMap[s] {
+				// set the string as key and value as true
+				uniqueMap[s] = true
+				// append to stringMap
+				stringMap = append(stringMap, s)
+			}
+		}
+
+	}
+
+	return strings.Join(stringMap, " ")
 }

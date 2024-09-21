@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jmoiron/sqlx/types"
 )
 
 var schema = `
@@ -29,11 +28,10 @@ var schema = `
 
 // User used for creating struct for user data from database
 type User struct {
-	ID       string  `json:"id" db:"users.id"`
-	Password string  `json:"-" db:"users.password"`
-	Email    string  `json:"email" db:"users.email"`
-	Username string  `json:"userName" db:"users.username"`
-	Roles    []*Role `json:"roles" db:"-"`
+	ID       string `json:"id" db:"users.id"`
+	Password string `json:"-" db:"users.password"`
+	Email    string `json:"email" db:"users.email"`
+	Username string `json:"userName" db:"users.username"`
 }
 
 // UserRole used for containg the user and the associated role
@@ -44,9 +42,9 @@ type UserRole struct {
 
 // Role used for creating struct for role data from database
 type Role struct {
-	UserID      string         `json:"-" db:"userId"`
-	Name        string         `json:"name" db:"roles.name"`
-	Permissions types.JSONText `json:"permissions" db:"roles.permissions"`
+	UserID      string `json:"-" db:"userId"`
+	Name        string `json:"name" db:"roles.name"`
+	Permissions string `json:"-" db:"roles.permissions"`
 }
 
 // LoginDetails for the username and password coming from the request body
@@ -62,8 +60,7 @@ type JwtResponse struct {
 
 // Payload contains the payload for the jwt token
 type Payload struct {
-	ID    string
-	Roles []*Role
+	Scope string `json:"scope"`
 }
 
 type Claims struct {

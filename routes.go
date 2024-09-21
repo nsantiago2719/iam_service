@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func IamRoutes(r *mux.Router) {
+func (s *API) IamRoutes(r *mux.Router) {
 	userPrefix := r.PathPrefix("/users").Subrouter()
-	r.HandleFunc("/auth", Auth).Methods(http.MethodPost)
-	r.HandleFunc("/logout", Logout).Methods(http.MethodDelete)
+	r.HandleFunc("/auth", s.Auth).Methods(http.MethodPost)
+	r.HandleFunc("/logout", s.Logout).Methods(http.MethodDelete)
 
 	userPrefix.HandleFunc("/{id}", UserDetails).Methods(http.MethodGet)
 }

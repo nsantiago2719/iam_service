@@ -18,9 +18,7 @@ import (
 // Auth function is used for authentication of the user,
 // returns a jwt containing the roles
 // and authorized actions
-func Auth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
+func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -35,6 +33,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	userRoles := []UserRole{}
 	usersMap := make(map[string]*User)
 	user := User{}
+	permissions := []string{}
 	query := `
   SELECT users.id AS "users.id",
        users.email AS "users.email",
@@ -49,7 +48,7 @@ func Auth(w http.ResponseWriter, r *http.Request) {
   WHERE users.username=$1
   `
 
-	if err := db.Select(&userRoles, query, login.Username); err != nil {
+	if err := s.database.Select(&userRoles, query, login.Username); err != nil {
 		fmt.Println("User select query failed: ", err)
 	}
 
@@ -61,7 +60,8 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			usersMap[user.ID] = user
 		}
 
-		usersMap[userRole.Role.UserID].Roles = append(usersMap[userRole.Role.UserID].Roles, &userRole.Role)
+		// append permissions from role
+		permissions = append(permissions, userRole.Role.Permissions)
 	}
 
 	for _, u := range usersMap {
@@ -73,17 +73,21 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// remove duplicate scopes
+	scope := RemoveStringDuplicate(permissions)
+
 	claims := Claims{
 		Payload{
-			ID:    user.ID,
-			Roles: user.Roles,
+			Scope: scope,
 		},
 		jwt.RegisteredClaims{
+			Subject:   user.ID,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			ID:        uuid.NewString(),
 		},
 	}
 
+	fmt.Println(claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString(jwtSecret)
@@ -95,11 +99,11 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		Token: tokenString,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	JSONWriter(w, http.StatusOK, response)
 }
 
 // Logout handler blacklist the token if it doesnt exist
-func Logout(w http.ResponseWriter, r *http.Request) {
+func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	redisClient := RedisClient()
 	ctx := context.Background()
@@ -112,7 +116,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		response := GenericResponse{
 			Message: "Token is invalid",
 		}
-		json.NewEncoder(w).Encode(response)
+		JSONWriter(w, http.StatusUnauthorized, response)
 		return
 	}
 	// get the token from redis and returns a resault
@@ -120,11 +124,10 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
-		errors.New("Token is already blacklisted")
 		response := GenericResponse{
 			Message: "Token is invalid",
 		}
-		json.NewEncoder(w).Encode(response)
+		JSONWriter(w, http.StatusUnauthorized, response)
 		return
 	}
 
@@ -138,5 +141,5 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		Message: "User logged out",
 	}
 
-	json.NewEncoder(w).Encode(response)
+	JSONWriter(w, http.StatusOK, response)
 }

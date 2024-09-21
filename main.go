@@ -23,6 +23,7 @@ const (
 )
 
 func main() {
-	server := APIServer(":3000", dsn)
+	fmt.Println(dsn)
+	server := APIServer(":8000", dsn)
 	server.Create()
 }
