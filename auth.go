@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -105,7 +104,6 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 // Logout handler blacklist the token if it doesnt exist
 func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	redisClient := RedisClient()
 	ctx := context.Background()
 	// Get the token from the Authorization header
 	token := r.Header.Get("Authorization")[7:]
@@ -120,7 +118,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// get the token from redis and returns a resault
-	val, _ := redisClient.Get(ctx, claim.RegisteredClaims.ID).Result()
+	val, _ := s.memoryCache.Get(ctx, claim.RegisteredClaims.ID).Result()
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
@@ -133,7 +131,7 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 
 	// Add token to cache for blacklisting
 	// show error if there is any
-	if err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err(); err != nil {
+	if err := s.memoryCache.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err(); err != nil {
 		fmt.Println("Error: ", err)
 	}
 

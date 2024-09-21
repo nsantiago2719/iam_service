@@ -8,11 +8,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 )
 
 type API struct {
-	listenAddr string
-	database   *sqlx.DB
+	listenAddr  string
+	database    *sqlx.DB
+	memoryCache *redis.Client
 }
 
 func APIServer(listenAddr, postgresDsn string) *API {
@@ -20,9 +22,15 @@ func APIServer(listenAddr, postgresDsn string) *API {
 	if err != nil {
 		log.Fatal("Error connecting to database", err)
 	}
+
+	memDb, err := RedisClient()
+	if err != nil {
+		log.Fatal("Error connecting to redis database", err)
+	}
 	return &API{
-		listenAddr: listenAddr,
-		database:   db,
+		listenAddr:  listenAddr,
+		database:    db,
+		memoryCache: memDb,
 	}
 }
 

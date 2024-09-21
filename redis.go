@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/redis/go-redis/v9"
 )
 
-func RedisClient() *redis.Client {
+func RedisClient() (*redis.Client, error) {
 	rcon := redis.NewClient(&redis.Options{
 		Addr:             Getenv("REDIS_ADDR"),
 		Password:         Getenv("REDIS_PASS", ""),
@@ -13,5 +15,8 @@ func RedisClient() *redis.Client {
 		DisableIndentity: GetenvBool("REDIS_IDENITY", "false"),
 	})
 
-	return rcon
+	if rcon == nil {
+		return nil, errors.New("Error connecting to Redis")
+	}
+	return rcon, nil
 }
