@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -41,12 +40,5 @@ func (s *API) Create() {
 	s.IamRoutes(router)
 
 	log.Println("iam service running on port", s.listenAddr)
-
 	http.ListenAndServe(s.listenAddr, router)
-}
-
-func JSONWriter(w http.ResponseWriter, status int, v any) error {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
 }

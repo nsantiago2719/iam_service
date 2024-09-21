@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -60,4 +62,10 @@ func RemoveStringDuplicate(s []string) string {
 	}
 
 	return strings.Join(stringMap, " ")
+}
+
+func JSONWriter(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(v)
 }
