@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/nsantiago2719/i_a_m/authorizer"
+	"github.com/nsantiago2719/iam_service/authorizer"
 	"golang.org/x/crypto/bcrypt"
 )
 

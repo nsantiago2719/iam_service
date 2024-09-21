@@ -1,4 +1,4 @@
-module github.com/nsantiago2719/i_a_m
+module github.com/nsantiago2719/iam_service
 
 go 1.22.5
 
