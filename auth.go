@@ -35,6 +35,7 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 
 	userRoles, err := s.database.getUserWithRolesByUsername(login.Username)
 	if err != nil {
+		fmt.Println("Error: ", err)
 	}
 
 	for _, userRole := range userRoles {
