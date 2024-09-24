@@ -5,14 +5,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
 type API struct {
 	listenAddr  string
-	database    *sqlx.DB
+	database    *PostgresDb
 	memoryCache *redis.Client
 }
 
@@ -36,7 +35,7 @@ func APIServer(listenAddr, postgresDsn string) *API {
 func (s *API) Create() {
 	router := mux.NewRouter()
 
-	s.database.MustExec(schema)
+	s.database.db.MustExec(schema)
 	s.IamRoutes(router)
 
 	log.Println("iam service running on port", s.listenAddr)

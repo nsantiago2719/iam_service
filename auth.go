@@ -29,26 +29,12 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed unmarshal of login details: %w", err)
 	}
 
-	userRoles := []UserRole{}
 	usersMap := make(map[string]*User)
 	user := User{}
 	permissions := []string{}
-	query := `
-  SELECT users.id AS "users.id",
-       users.email AS "users.email",
-       users.username AS "users.username",
-       users.password AS "users.password",
-       roles.name AS "roles.name",
-       roles.permissions AS "roles.permissions",
-       ur.user_id AS "userId"
-  FROM users AS users
-  LEFT JOIN users_roles AS ur ON users.id = ur.user_id
-  LEFT JOIN roles AS roles ON roles.id = ur.role_id
-  WHERE users.username=$1
-  `
 
-	if err := s.database.Select(&userRoles, query, login.Username); err != nil {
-		fmt.Println("User select query failed: ", err)
+	userRoles, err := s.database.getUserWithRolesByUsername(login.Username)
+	if err != nil {
 	}
 
 	for _, userRole := range userRoles {
