@@ -110,10 +110,18 @@ func (s *API) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := context.Background()
 	// Get the token from the Authorization header
-	token := r.Header.Get("Authorization")[7:]
+	token := r.Header.Get("Authorization")
+
+	if token == "" {
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusUnauthorized,
+			Msg:    "Authorization header invalid",
+		}
+	}
 
 	// Extract claim and checks validity
-	sub, err := authorizer.AuthorizedAccess("user.logout", token)
+	sub, err := authorizer.AuthorizedAccess("user.logout", token[7:])
 	if err != nil {
 		return APIError{
 			Path:   "/logout",
