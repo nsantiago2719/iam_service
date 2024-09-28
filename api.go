@@ -27,7 +27,7 @@ func makeHandler(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
 			if e, ok := err.(APIError); ok {
-				slog.Error(e.Msg, "status", e.Status)
+				slog.Error(e.Path, "msg", e.Msg, "status", e.Status)
 				response := GenericResponse{
 					Message: err.Error(),
 				}
