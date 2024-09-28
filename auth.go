@@ -3,54 +3,49 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/nsantiago2719/i_a_m/authorizer"
+	"github.com/nsantiago2719/iam_service/authorizer"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Auth function is used for authentication of the user,
 // returns a jwt containing the roles
 // and authorized actions
-func Auth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
+func (s *API) handleAuth(w http.ResponseWriter, r *http.Request) error {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
 	var login LoginDetails
 	if err := json.Unmarshal(body, &login); err != nil {
-		fmt.Println("Failed unmarshal of login details: %w", err)
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
-	userRoles := []UserRole{}
 	usersMap := make(map[string]*User)
 	user := User{}
-	query := `
-  SELECT users.id AS "users.id",
-       users.email AS "users.email",
-       users.username AS "users.username",
-       users.password AS "users.password",
-       roles.name AS "roles.name",
-       roles.permissions AS "roles.permissions",
-       ur.user_id AS "userId"
-  FROM users AS users
-  LEFT JOIN users_roles AS ur ON users.id = ur.user_id
-  LEFT JOIN roles AS roles ON roles.id = ur.role_id
-  WHERE users.username=$1
-  `
+	permissions := []string{}
 
-	if err := db.Select(&userRoles, query, login.Username); err != nil {
-		fmt.Println("User select query failed: ", err)
+	userRoles, err := s.database.getUserWithRolesByUsername(login.Username)
+	if err != nil {
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
 	for _, userRole := range userRoles {
@@ -61,7 +56,8 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			usersMap[user.ID] = user
 		}
 
-		usersMap[userRole.Role.UserID].Roles = append(usersMap[userRole.Role.UserID].Roles, &userRole.Role)
+		// append permissions from role
+		permissions = append(permissions, userRole.Role.Permissions)
 	}
 
 	for _, u := range usersMap {
@@ -69,16 +65,22 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password)); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
+
+	// remove duplicate scopes
+	scope := RemoveStringDuplicate(permissions)
 
 	claims := Claims{
 		Payload{
-			ID:    user.ID,
-			Roles: user.Roles,
+			Scope: scope,
 		},
 		jwt.RegisteredClaims{
+			Subject:   user.ID,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			ID:        uuid.NewString(),
 		},
@@ -88,55 +90,63 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
-		fmt.Println(err)
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
 
 	response := JwtResponse{
 		Token: tokenString,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	JSONWriter(w, http.StatusOK, response)
+	return nil
 }
 
 // Logout handler blacklist the token if it doesnt exist
-func Logout(w http.ResponseWriter, r *http.Request) {
+func (s *API) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
-	redisClient := RedisClient()
 	ctx := context.Background()
 	// Get the token from the Authorization header
 	token := r.Header.Get("Authorization")[7:]
 
 	// Extract claim and checks validity
-	claim, err := authorizer.ExtractClaim(token)
+	sub, err := authorizer.AuthorizedAccess("user.logout", token)
 	if err != nil {
-		response := GenericResponse{
-			Message: "Token is invalid",
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
 		}
-		json.NewEncoder(w).Encode(response)
-		return
 	}
 	// get the token from redis and returns a resault
-	val, _ := redisClient.Get(ctx, claim.RegisteredClaims.ID).Result()
+	val, _ := s.memoryCache.Get(ctx, *sub).Result()
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
-		errors.New("Token is already blacklisted")
-		response := GenericResponse{
-			Message: "Token is invalid",
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusBadRequest,
+			Msg:    "Bad request",
 		}
-		json.NewEncoder(w).Encode(response)
-		return
 	}
 
 	// Add token to cache for blacklisting
 	// show error if there is any
-	if err := redisClient.Set(ctx, claim.RegisteredClaims.ID, token, 15*time.Minute).Err(); err != nil {
-		fmt.Println("Error: ", err)
+	if err := s.memoryCache.Set(ctx, *sub, token, 15*time.Minute).Err(); err != nil {
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
 
 	response := GenericResponse{
 		Message: "User logged out",
 	}
 
-	json.NewEncoder(w).Encode(response)
+	JSONWriter(w, http.StatusOK, response)
+	return nil
 }

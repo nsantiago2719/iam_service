@@ -1,11 +1,13 @@
 FROM golang:1.22.7-alpine3.20 AS builder
 
+RUN apk add --no-cache make
+
 COPY . .
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /i_a_m
+RUN make release
 
-FROM gcr.io/distroless/static-debian12
+FROM scratch
 
-COPY --from=builder /i_a_m /
+COPY --from=builder release/iam .
 
-CMD ["/i_a_m"]
+CMD ["iam"]
