@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -17,16 +16,23 @@ import (
 // Auth function is used for authentication of the user,
 // returns a jwt containing the roles
 // and authorized actions
-func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
+func (s *API) handleAuth(w http.ResponseWriter, r *http.Request) error {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
 	var login LoginDetails
 	if err := json.Unmarshal(body, &login); err != nil {
-		fmt.Println("Failed unmarshal of login details: %w", err)
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
 	usersMap := make(map[string]*User)
@@ -35,7 +41,11 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 
 	userRoles, err := s.database.getUserWithRolesByUsername(login.Username)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusBadRequest,
+			Msg:    err.Error(),
+		}
 	}
 
 	for _, userRole := range userRoles {
@@ -55,8 +65,11 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password)); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
 
 	// remove duplicate scopes
@@ -77,7 +90,11 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
-		fmt.Println(err)
+		return APIError{
+			Path:   "/auth",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
 
 	response := JwtResponse{
@@ -85,10 +102,11 @@ func (s *API) Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSONWriter(w, http.StatusOK, response)
+	return nil
 }
 
 // Logout handler blacklist the token if it doesnt exist
-func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
+func (s *API) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := context.Background()
 	// Get the token from the Authorization header
@@ -97,28 +115,32 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	// Extract claim and checks validity
 	sub, err := authorizer.AuthorizedAccess("user.logout", token)
 	if err != nil {
-		response := GenericResponse{
-			Message: "Token is invalid",
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
 		}
-		JSONWriter(w, http.StatusUnauthorized, response)
-		return
 	}
 	// get the token from redis and returns a resault
 	val, _ := s.memoryCache.Get(ctx, *sub).Result()
 
 	// check if there is a value, if true, returns error
 	if len(val) > 0 {
-		response := GenericResponse{
-			Message: "Token is invalid",
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusBadRequest,
+			Msg:    "Bad request",
 		}
-		JSONWriter(w, http.StatusUnauthorized, response)
-		return
 	}
 
 	// Add token to cache for blacklisting
 	// show error if there is any
 	if err := s.memoryCache.Set(ctx, *sub, token, 15*time.Minute).Err(); err != nil {
-		fmt.Println("Error: ", err)
+		return APIError{
+			Path:   "/logout",
+			Status: http.StatusUnauthorized,
+			Msg:    err.Error(),
+		}
 	}
 
 	response := GenericResponse{
@@ -126,4 +148,5 @@ func (s *API) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSONWriter(w, http.StatusOK, response)
+	return nil
 }

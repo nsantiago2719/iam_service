@@ -71,3 +71,9 @@ type Claims struct {
 type GenericResponse struct {
 	Message string `json:"message"`
 }
+
+type APIError struct {
+	Path   string
+	Status int
+	Msg    string
+}
