@@ -6,7 +6,6 @@ import (
 
 var schema = `
   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-  CREATE EXTENSION IF NOT EXISTS dblink;
 
   CREATE TABLE IF NOT EXISTS roles (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
