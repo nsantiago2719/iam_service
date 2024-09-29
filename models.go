@@ -8,13 +8,6 @@ var schema = `
   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
   CREATE EXTENSION IF NOT EXISTS dblink;
 
-  DO $$
-  BEGIN
-  PERFORM dblink_exec('', 'CREATE DATABASE iam');
-  EXCEPTION WHEN duplicate_database THEN RAISE NOTICE '%, skipping', SQLERRM USING ERRCODE = SQLSTATE;
-  END
-  $$;
-
   CREATE TABLE IF NOT EXISTS roles (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     permissions JSONB,
