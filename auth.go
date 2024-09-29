@@ -31,7 +31,7 @@ func (s *API) handleAuth(w http.ResponseWriter, r *http.Request) error {
 		return APIError{
 			Path:   "/auth",
 			Status: http.StatusBadRequest,
-			Msg:    err.Error(),
+			Msg:    "Missing login details",
 		}
 	}
 
@@ -39,6 +39,7 @@ func (s *API) handleAuth(w http.ResponseWriter, r *http.Request) error {
 	user := User{}
 	permissions := []string{}
 
+	// query to the database to get the user and its roles
 	userRoles, err := s.database.getUserWithRolesByUsername(login.Username)
 	if err != nil {
 		return APIError{
@@ -60,21 +61,24 @@ func (s *API) handleAuth(w http.ResponseWriter, r *http.Request) error {
 		permissions = append(permissions, userRole.Role.Permissions)
 	}
 
+	// set user
 	for _, u := range usersMap {
 		user = *u
 	}
 
+	// compare the passsword hash using bcrypt
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password)); err != nil {
 		return APIError{
 			Path:   "/auth",
 			Status: http.StatusUnauthorized,
-			Msg:    err.Error(),
+			Msg:    "Invalid login details given",
 		}
 	}
 
-	// remove duplicate scopes
+	// remove duplicate scopes from the permissions of the user
 	scope := RemoveStringDuplicate(permissions)
 
+	// create custom claim containing the scope
 	claims := Claims{
 		Payload{
 			Scope: scope,
