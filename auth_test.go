@@ -13,7 +13,8 @@ import (
 func TestHandleAuth(t *testing.T) {
 	s := APIServer(":8000", dsn)
 	r := mux.NewRouter()
-	s.Create()
+	s.database.db.MustExec(schema)
+	s.IamRoutes(r)
 
 	invalidData := []byte(`{"username": "john.doe", "password": ""}`)
 	req := httptest.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(invalidData))
