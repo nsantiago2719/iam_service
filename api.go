@@ -17,6 +17,7 @@ func (e APIError) Error() string {
 	return e.Msg
 }
 
+// JSONWriter is helper to return a json response based on status and v
 func JSONWriter(w http.ResponseWriter, status int, v any) error {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -37,12 +38,15 @@ func makeHandler(f apiFunc) http.HandlerFunc {
 	}
 }
 
+// API details
 type API struct {
 	listenAddr  string
 	database    *PostgresDb
 	memoryCache *redis.Client
 }
 
+// APIServer initializes the APIServer including
+// its db and memDb
 func APIServer(listenAddr, postgresDsn string) *API {
 	db, err := PostgresCreate(postgresDsn)
 	if err != nil {
@@ -60,20 +64,22 @@ func APIServer(listenAddr, postgresDsn string) *API {
 	}
 }
 
+// Create runs the api
 func (s *API) Create() {
 	router := mux.NewRouter()
 
 	s.database.db.MustExec(schema)
-	s.IamRoutes(router)
+	s.createRoutes(router)
 
 	log.Println("iam service running on port", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
 }
 
-func (s *API) IamRoutes(r *mux.Router) {
+func (s *API) createRoutes(r *mux.Router) *mux.Router {
 	userPrefix := r.PathPrefix("/users").Subrouter()
 	r.HandleFunc("/auth", makeHandler(s.handleAuth)).Methods(http.MethodPost)
 	r.HandleFunc("/logout", makeHandler(s.handleLogout)).Methods(http.MethodDelete)
 
 	userPrefix.HandleFunc("/{id}", UserDetails).Methods(http.MethodGet)
+	return r
 }
